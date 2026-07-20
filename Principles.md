@@ -193,9 +193,11 @@ Weighed against this vault's current adopter count — one, Argus, per [[Adopter
 >
 > **For:** the mechanism to receive cross-project pushes now exists in more than one form (`Insights/`/`Growth/`, `ecosystem-sync`) — adding a telemetry stream would reuse an established pattern, not invent a new one.
 >
-> **Against / unresolved:** (1) Still only one project (Argus) would emit this data today — building the aggregation now is seeding future capability, not solving a live problem, until a second adopting project exists. (2) Argus's schema (`blocker_type` values like `kms-secrets-touch`, specialist names, `safe_surface`) is project-specific and shouldn't be copied verbatim — a generalized event would need to shrink to project name, stage, a normalized category label, and `recurrence_verdict`, not the full Argus field set. (3) Whether a repeated label match should ever *auto*-promote a pattern into this file, or whether that judgment must stay manual as it is today — Argus's own `recurrence_verdict` field already distinguishes "recurring" from "same label, different actual cause," which is a judgment call a label match alone can't make.
+> **Against / unresolved:** (1) Still only one project (Argus) would emit this data today — building the aggregation now is seeding future capability, not solving a live problem, until a second adopting project exists. (2) Whether a repeated label match should ever *auto*-promote a pattern into this file, or whether that judgment must stay manual as it is today — Argus's own `recurrence_verdict` field already distinguishes "recurring" from "same label, different actual cause," which is a judgment call a label match alone can't make.
 >
-> Still open: the generalized event schema, whether to start capturing now purely to backfill history before a second project exists, and whether the cross-project reader of this log should be `ecosystem-diagnostician` itself (already generalized) or a new template entirely.
+> **Update (#81):** the generalized event schema sub-question below is resolved — [[Templates/Hooks/README]]'s "field-level baseline every emitted event carries" section is now the one canonical definition (`timestamp`, `project`, `stage`, `category`, `blocker_type`, `recurrence_verdict`), per [[Principles#Shared shapes need one definition, not one description per reader]]. It shrinks Argus's own field set to what's actually meant to be cross-project-comparable (`category`, normalized) versus what stays local-only (`blocker_type`, free-text, unchanged from Argus's own field of that name) — not a verbatim copy of Argus's full schema. It is a first pass grounded in one project's data only; a follow-on issue tracks revisiting it once a second adopter's real pipeline-log data exists to validate the split against.
+>
+> Still open: whether to start capturing now purely to backfill history before a second project exists, and whether the cross-project reader of this log should be `ecosystem-diagnostician` itself (already generalized) or a new template entirely — both unaffected by the schema resolution above.
 
 ## Related
 
@@ -212,5 +214,4 @@ Weighed against this vault's current adopter count — one, Argus, per [[Adopter
 - [[Templates/Agents/prompt-auditor]] — its independent audit, dispatched twice for HIGH-tier edits
 - [[Templates/CI/README]]
 - [[Templates/Hooks/README]]
-- [[Adoption Checklist]]
 - [[Timeline]]
