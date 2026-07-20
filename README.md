@@ -1,88 +1,89 @@
-# Agentic SDLC Pipeline
+# Agent Ecosystem
 
-**If you cannot trust your agent, you cannot make it write quality code.**
-
-Not trust as in blind faith. The control I want isn't stop-and-confirm-every-step babysitting — it's enough real structure (adversarial audit, independent checks, guardrails anchored outside the agent's own context) that doing it wrong has been made structurally harder than doing it right.
+A generalized template set for a multi-agent Claude Code SDLC pipeline: a supervisor skill that claims a piece of work and dispatches specialist subagents — implement, test, adversarially audit, keep docs in sync — through to a reviewed PR.
 
 ## Why this exists
 
-I kept doing the same thing to Claude, over and over: "are you sure you got everything?" "I know you said this is the final design, but I bet we can do better." And every single time — "oh yeah, I totally missed that part."
+An agent that writes the code is poorly positioned to also judge whether the code is complete — it already believes its own output is correct, or it wouldn't have produced it. Asking it to double-check doesn't fix this, because the second pass comes from the same biased position: it reliably turns up something that was missed, without ever converging on an actual "yes, done."
 
-Not once in a while. Every time, if I pushed hard enough. That's not really a Claude-specific problem — it's what happens whenever the same agent that wrote the code is also the one grading whether the code is done. Ask it if it's sure, and it'll go find something, because "sure" was never actually checked in the first place.
+So no agent in this pipeline — including Claude — certifies its own work. Every completion claim gets checked by an independent process that derives its own view of what "correct" means before it looks at the work being checked.
 
-So I built a system where no agent — mine or Claude's — gets to certify its own work as done. An independent check has to be able to confirm it without me asking twice. `edge-case-auditor` derives its own list of what could go wrong from the spec — before it's allowed to read the implementer's code or the test-writer's tests — so it can't just rubber-stamp whatever blind spots they already share.
+## Current capabilities
 
-Same rule applies to me: if I'm missing something, the pipeline should surface it, not quietly work around it.
-
-## At a glance
-
-| | |
-|---|---|
-| **Agent templates** | 14 — each does one job, returns a result, isolated context |
-| **Skill templates** | 6 — orchestration-capable, run inline with full tool access |
-| **Design principles** | 21, each grounded in a real incident or a citable source, not intuition |
-| **Adopted by** | 2 independent projects, evidence-scored per project rather than installed wholesale |
-| **Real-world use** | `doc-keeper`'s first audit run on the most recent adoption found real documentation drift on the first try |
-
-## How the pipeline works
+Six skills cover the idea-to-PR lifecycle. Five sit on one linear path; `cleanup` runs independently, at the end of a session.
 
 ```mermaid
 flowchart LR
-    A[Idea] --> B["/shape\nkeep or kill"]
-    B -- kill --> Z[Dropped]
-    B -- keep --> C["/spec\nDefinition of Ready"]
-    C --> D["queue-scout\ndependency check"]
+    A[idea] --> B["/shape"]
+    B --> C["/spec"]
+    C --> D[queue-scout]
     D --> E["/implement"]
-    E --> F[Pull Request]
-    F -.-> G["pipeline-review\nperiodic sweep"]
-    F -.-> H["cleanup\nsession hygiene"]
+    E --> F[PR]
+    F --> G[pipeline-review]
 ```
 
-| Skill | What it does |
-|---|---|
-| `/shape` | Idea intake — ICE-scored, pre-mortem'd, kill criteria pre-registered before work starts. Kills the idea or hands off to `/spec`, never both silently. |
-| `/spec` | Turns a shaped idea into a Definition-of-Ready spec — surfaces every conflict or ambiguity up front, so the implementer never has to stop and ask about it mid-build. |
-| `/implement` | The core loop — implement, test, independent adversarial audit, then PR. |
-| `queue-scout` | Verifies dependencies and feasibility across the whole backlog before anything runs in parallel. |
-| `pipeline-review` | Periodic broad sweep over the pipeline's own logs — catches what the automatic per-event checks structurally can't. |
-| `cleanup` | End-of-session worktree/branch/issue hygiene, so nothing gets left dirty between sessions. |
+| Skill | Invoked | Job |
+|---|---|---|
+| `/shape` | manual, one idea/issue at a time | ICE score, pre-mortem, pre-registered kill criteria, then a reasoned kill or hand-off to `/spec` |
+| `/spec` | manual, or auto-dispatched by `/implement` on a bail | turns a rough issue into an implementation-ready spec; the one place this pipeline drafts an ADR |
+| `queue-scout` | manual, before running `/implement` (especially in parallel) | read-only: verifies claimed dependencies against the codebase, groups verified-ready issues into parallel-safe batches |
+| `/implement` | manual, with an issue number or blank to pick from the queue | supervisor: claims the issue, dispatches specialists, opens the PR |
+| `pipeline-review` | manual, periodic | broad sweep of the pipeline's own event log: recurring bail/spec-question patterns, decision-outcome correlation, token/CI/cloud efficiency |
+| `cleanup` | manual, end of session | worktree/branch/issue hygiene sweep |
 
-### Zooming into `/implement`
+### Zoom in: `/implement`
 
 ```mermaid
-flowchart LR
-    A["/implement\nsupervisor"] --> B[core-implementer]
-    B --> C[test-writer]
-    C --> D{{"edge-case-auditor\nindependent adversarial audit"}}
-    D -- FLAG --> B
-    D -- DONE --> E[Pull Request]
+flowchart TD
+    S1[claim issue] --> S2[read + validate spec]
+    S2 --> S2b[verify claimed dependencies against the codebase]
+    S2b --> S2c[check acceptance criteria are semantically satisfiable]
+    S2c --> S4[create worktree + branch]
+    S4 --> S5[core-implementer]
+    S5 --> S6[test-writer]
+    S6 --> S6b[edge-case-auditor]
+    S6b -->|FLAG, up to 2 fix rounds| S5
+    S6b --> S6c[code-review gate]
+    S6c --> S7[iac-specialist, conditional]
+    S7 --> S7b[doc-keeper, conditional]
+    S7b --> S7c[self-review]
+    S7c --> S9[open PR]
+    S2 -->|missing/incomplete| BAIL[BAIL to /spec]
+    S2b -->|dependency doesn't hold| BAIL
+    S2c -->|infeasible| BAIL
 ```
 
-The audit step is the load-bearing one: `edge-case-auditor` derives its own list of edge cases from the issue's stated guarantees **before** it reads a single line of the implementation or the tests. See [Adversarial verification: assume both are wrong](Principles.md#adversarial-verification-assume-both-are-wrong).
+`edge-case-auditor`'s fix loop is bounded: initial audit + 2 fix rounds max, 3 audit passes total. A BAIL at any point hands off to `/spec` rather than guessing.
 
 ## Design highlights
 
-- **Adversarial verification, not a second opinion.** The auditor's edge-case list is derived from intent first, reconciled against the spec's own table second, and only then checked against the real diff — reading the code first would mean only ever imagining the edge cases the code already has a branch for. [→ Principles.md](Principles.md#adversarial-verification-assume-both-are-wrong)
-- **Guardrails need an anchor outside the agent's own context.** A rule written into a prompt isn't durable — context-window compression can silently drop a safety instruction as low-priority filler among thousands of tokens. Every guardrail here (CI, two-step confirmations, independent audits) lives somewhere an agent's own session can't quietly talk its way around. [→ Principles.md](Principles.md#guardrails-need-an-anchor-outside-the-agents-own-context-not-just-good-prompting)
-- **Templates carry a real semver.** A prompt file versions like a deployed API contract here — major/minor/patch decided by whether an adopter's already-installed copy would break, not by how much text moved around. [→ Principles.md](Principles.md#templates-carry-a-real-semver-not-just-a-version-string-decoration)
-- **Not "customizable" in the vague, mainstream-advice sense.** I checked whether Claude Code's own plugin `userConfig` system already solved this — it doesn't. `userConfig` only handles short scalar fields, not the prose-heavy `[CUSTOMIZE: ...]` judgment calls these templates need filled in. Built for a real, documented gap, not because "customizable" sounds good on a landing page.
+- Adversarial verification: `edge-case-auditor` derives its edge-case list from the stated guarantees before it reads the diff, so it can't just rediscover the blind spots `core-implementer` and `test-writer` already share.
+- `/spec` can trigger a design-exploration mode for a genuine architectural decision with competing approaches: 2–4 independent candidate designs, each reviewed by its own independent `design-critic` with no shared context between reviews, and a bounded one-shot regenerate for any candidate that gets flagged. The Operator picks among survivors; every rejected candidate's reasoning is recorded in the resulting ADR's own "Alternatives considered" section, not just the winner's rationale.
+- Guardrails need an anchor outside the agent's own context, not just good prompting. Grounded in Meta's OpenClaw incident: ordinary context-window compression silently dropped a 10-token "don't act without approval" constraint out of 50,000 tokens of conversation, and the agent went on to delete 200+ emails. CI, two-step ADR confirmation, and independent audits in this pipeline all exist because a constraint checked only by the same agent holding it isn't a guardrail.
+- Safety surfaces are a bright line, not a judgment call: a project names its "never touch autonomously" domain up front (secrets, auth, financial calculations, IaC applies), and any agent touching it stops for explicit human approval every time, regardless of how routine the change looks.
+- The vault updates itself: `ecosystem-sync`, installed in every adopting project, watches that project's own `.claude/agents`/`.claude/commands` and automatically ports back anything genuinely reusable it built or sharpened — dispatched by that project's own implementation supervisor on every PR touching pipeline tooling, no manual "go update the vault" step.
+- Pipeline events (bail, spec-question, decision, PR-opened, ...) write through one sanctioned emission script instead of ad hoc JSON in a `Bash` call, and a `PreToolUse` hook blocks any other write path to the log file. The agent still makes the judgment call — what happened, why; only the write to disk is mechanized. `pipeline-review` reads this log for recurring bail/spec-question patterns and to correlate past decisions against what actually happened.
+- Templates carry a real semver — a version bump means the same thing it does for a versioned API: would an adopter already running a copy need to change anything to pick up the new version.
+- Customization is copy-and-fill, not push-update, and that's a deliberate tradeoff, not an oversight: Claude Code's own plugin system already solves push-updates for skills, but its `userConfig` only supports scalar fields (string/number/boolean/directory/file), not the prose-heavy `[CUSTOMIZE: ...]` blocks these templates use — investigated for issue #37, not adopted yet.
+
+## Evidence
+
+- 14 agent templates, 6 skills, 19 principles — each grounded in a real incident or a citable source, not intuition.
+- 2 independent production adopters (see `Adopters.md`): Map of Telegram and Hermes.
+- `doc-keeper`'s first audit run, on Map of Telegram, found real, live drift on the first try: three docs citing a stale cron cadence, a missing `Timeline.md` entry, and a stale "unverified" claim a same-repo doc had already resolved days earlier.
 
 ## What's inside
 
-| Path | What it is |
-|---|---|
-| [`Principles.md`](Principles.md) | The design rules, each grounded in a real incident or a named source — read this first |
-| [`Templates/Agents/`](Templates/Agents) | 14 specialist agent definitions: implementer, test-writer, adversarial auditor, IaC specialist, doc-keeper, and more |
-| [`Templates/Skills/`](Templates/Skills) | 6 orchestration-capable skills: the implementation supervisor, spec-writer, cleanup sweep, periodic pipeline review |
-| [`Timeline.md`](Timeline.md) | Narrative log of when and why the pipeline's shape changed |
-| [`Adopters.md`](Adopters.md) / [`adopters.yaml`](adopters.yaml) | Real projects running this pipeline today, and what's installed where |
-| [`Adoption Checklist.md`](Adoption%20Checklist.md) | Step-by-step guide to bringing this into a new project |
-
-## Grounded in, not invented
-
-Every new principle or template here cites what it's grounded in: a real incident (see `Timeline.md`), an established practice (ITIL change-management tiers, the Twelve-Factor App, semver.org, Conventional Comments), or documented agentic-systems research. "My gut says X" isn't something a future reader, or an interviewer, can push back on, so it doesn't get written.
-
-Claude wrote most of the prose in these templates. The differentiator is the specs and judgment calls, not hand-written code purity.
+- `Home.md` — vault hub, links to everything else
+- `Principles.md` — the design rules, each grounded in a real incident or citable source
+- `Templates/Agents/` — 14 generalized subagent definitions
+- `Templates/Skills/` — 6 generalized skill/slash-command definitions
+- `Templates/GitHub/` — shared label taxonomy and issue/comment templates the agents and skills read instead of each redefining them
+- `Templates/CI/`, `Templates/Hooks/` — the CI workflow and event-logging hook this pipeline assumes
+- `.claude/commands/project-lifecycle.md` — the front door for bringing a target project into this pipeline
+- `Adopters.md` / `adopters.yaml` — which projects have adopted this pipeline and what's installed where
+- `Timeline.md` — narrative log of when and why the pipeline changed shape
+- `Gap-Analysis/`, `Growth/`, `Insights/` — dated, append-only reports from this vault's own periodic self-review skills
 
 ## License
 
