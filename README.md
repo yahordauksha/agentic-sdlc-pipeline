@@ -2,7 +2,7 @@
 
 **If you cannot trust your agent, you cannot make it write quality code.**
 
-Not trust as in blind faith — trust as in you've built enough real structure around it that doing the wrong thing is *structurally* harder than doing the right thing. That's the whole bet this repo makes.
+Not trust as in blind faith. The control I want isn't stop-and-confirm-every-step babysitting — it's enough real structure (adversarial audit, independent checks, guardrails anchored outside the agent's own context) that doing it wrong has been made structurally harder than doing it right.
 
 ## Why this exists
 
@@ -12,17 +12,7 @@ Not once in a while. Every time, if I pushed hard enough. That's not really a Cl
 
 So I built a system where no agent — mine or Claude's — gets to certify its own work as done. An independent check has to be able to confirm it without me asking twice. `edge-case-auditor` derives its own list of what could go wrong from the spec — before it's allowed to read the implementer's code or the test-writer's tests — so it can't just rubber-stamp whatever blind spots they already share.
 
-## The actual point
-
-No one gets to certify their own work as done — not the agent, and not me. That's not a rule I'm imposing on Claude from above; it's the same rule applied to both of us. An implementer that reviews its own diff has the same blind spot as an engineer who reviews their own PR: both already believe it's correct, or they wouldn't have shipped it.
-
-The pipeline logs and the adversarial-audit design exist for exactly this reason — not just to catch bugs in the code, but to catch gaps in the reasoning behind a design decision before they get expensive. That's a different goal from most agent-tooling projects, which optimize purely for making the agent more reliable. This one applies the same independent-verification standard to both sides of the loop.
-
-## It's not hypothetical
-
-Two independent projects run this pipeline in production today (see [`Adopters.md`](Adopters.md)) — real GitHub issues, driven end-to-end through spec → implement → test → adversarial audit → merged, green-CI PR. On the most recent adoption, `doc-keeper`'s very first audit run found real, live documentation drift on the first try — stale docs and a missing changelog entry, caught by the structure doing its job, not by me remembering to check.
-
-There's also `/onboard`, an earlier skill for the same install step. I built it, used it once, and pulled it the same day — it worked, but it installed everything into every project with no relevance check, which is exactly the discipline I'd already written down elsewhere and immediately violated. `project-lifecycle.md` is the rebuild: it evidence-scores what a project actually needs before installing anything, and a project correctly ending up with zero templates installed is treated as a valid outcome, not a bug.
+Same rule applies to me: if I'm missing something, the pipeline should surface it, not quietly work around it.
 
 ## At a glance
 
@@ -32,6 +22,7 @@ There's also `/onboard`, an earlier skill for the same install step. I built it,
 | **Skill templates** | 6 — orchestration-capable, run inline with full tool access |
 | **Design principles** | 21, each grounded in a real incident or a citable source, not intuition |
 | **Adopted by** | 2 independent projects, evidence-scored per project rather than installed wholesale |
+| **Real-world use** | `doc-keeper`'s first audit run on the most recent adoption found real documentation drift on the first try |
 
 ## How the pipeline works
 
@@ -71,8 +62,6 @@ The audit step is the load-bearing one: `edge-case-auditor` derives its own list
 
 ## Design highlights
 
-A few of the decisions I'd actually defend in an interview:
-
 - **Adversarial verification, not a second opinion.** The auditor's edge-case list is derived from intent first, reconciled against the spec's own table second, and only then checked against the real diff — reading the code first would mean only ever imagining the edge cases the code already has a branch for. [→ Principles.md](Principles.md#adversarial-verification-assume-both-are-wrong)
 - **Guardrails need an anchor outside the agent's own context.** A rule written into a prompt isn't durable — context-window compression can silently drop a safety instruction as low-priority filler among thousands of tokens. Every guardrail here (CI, two-step confirmations, independent audits) lives somewhere an agent's own session can't quietly talk its way around. [→ Principles.md](Principles.md#guardrails-need-an-anchor-outside-the-agents-own-context-not-just-good-prompting)
 - **Templates carry a real semver.** A prompt file versions like a deployed API contract here — major/minor/patch decided by whether an adopter's already-installed copy would break, not by how much text moved around. [→ Principles.md](Principles.md#templates-carry-a-real-semver-not-just-a-version-string-decoration)
@@ -85,7 +74,7 @@ A few of the decisions I'd actually defend in an interview:
 | [`Principles.md`](Principles.md) | The design rules, each grounded in a real incident or a named source — read this first |
 | [`Templates/Agents/`](Templates/Agents) | 14 specialist agent definitions: implementer, test-writer, adversarial auditor, IaC specialist, doc-keeper, and more |
 | [`Templates/Skills/`](Templates/Skills) | 6 orchestration-capable skills: the implementation supervisor, spec-writer, cleanup sweep, periodic pipeline review |
-| [`Timeline.md`](Timeline.md) | Narrative log of when and why the pipeline's shape changed — including what got built and torn down same-day when it turned out wrong |
+| [`Timeline.md`](Timeline.md) | Narrative log of when and why the pipeline's shape changed |
 | [`Adopters.md`](Adopters.md) / [`adopters.yaml`](adopters.yaml) | Real projects running this pipeline today, and what's installed where |
 | [`Adoption Checklist.md`](Adoption%20Checklist.md) | Step-by-step guide to bringing this into a new project |
 
@@ -93,11 +82,7 @@ A few of the decisions I'd actually defend in an interview:
 
 Every new principle or template here cites what it's grounded in: a real incident (see `Timeline.md`), an established practice (ITIL change-management tiers, the Twelve-Factor App, semver.org, Conventional Comments), or documented agentic-systems research. "My gut says X" isn't something a future reader, or an interviewer, can push back on, so it doesn't get written.
 
-Claude wrote most of the actual prose in these templates. What's mine is the judgment underneath it — which incidents were worth a principle, which templates needed to exist at all, and when a design was wrong enough to tear down and rebuild the same day.
-
-## About me
-
-I moved from straight software engineering into DevOps because routine implementation work didn't hold my interest — agent orchestration turned out to be exactly the kind of systems-level, non-routine problem I was looking for, and this pipeline is what came out of chasing it. (CS degree, Cum Laude, University of South Florida, Dec 2025; AWS Certified Solutions Architect – Associate; currently in EPAM's DevOps Lab program, after a cloud engineering internship at Atex Trade.)
+Claude wrote most of the prose in these templates. The differentiator is the specs and judgment calls, not hand-written code purity.
 
 ## License
 
