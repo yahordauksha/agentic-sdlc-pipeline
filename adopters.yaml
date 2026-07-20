@@ -7,16 +7,12 @@
 #
 # Identity is the GitHub repo URL, not a local filesystem path, so this
 # registry is usable across machines rather than tied to one laptop.
-#
-# This is the public copy: repo `url` fields are redacted (private
-# projects, not linked publicly) but project names and template-install
-# detail are kept as-is.
 
 adopters:
   - project: Argus
     joined_date: "origin project — this pipeline was extracted from Argus on 2026-07-07, not a real adoption date"
     repos:
-      - url: "(private)"
+      - url: https://github.com/yahordauksha/argus-product
         templates_installed:
           agents:
             - core-implementer
@@ -35,14 +31,14 @@ adopters:
             - pipeline-review
             - queue-scout
             - spec
-      - url: "(private)"
+      - url: https://github.com/yahordauksha/argus-docs
         templates_installed:
           agents: []
           skills: []
   - project: Map of Telegram
     joined_date: "2026-07-16"
     repos:
-      - url: "(private)"
+      - url: https://github.com/yahordauksha/map-of-telegram
         templates_installed:
           agents:
             - core-implementer
@@ -53,6 +49,28 @@ adopters:
             - iac-specialist
             - ops-check
             - test-writer
+          skills:
+            - cleanup
+            - implement
+            - queue-scout
+            - shape
+            - spec
+  - project: Hermes
+    joined_date: "2026-07-20"
+    repos:
+      - url: https://github.com/yahordauksha/hermes
+        templates_installed:
+          agents:
+            - core-implementer
+            - design-critic
+            - doc-keeper
+            - ecosystem-diagnostician
+            - ecosystem-sync
+            - edge-case-auditor
+            - iac-specialist
+            - ops-check
+            - test-writer
+            - triage
           skills:
             - cleanup
             - implement
