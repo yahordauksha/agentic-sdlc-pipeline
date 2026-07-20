@@ -3,8 +3,8 @@
 The canonical reference for every agent and skill in this multi-project pipeline — the bible, not a snapshot. It stores the generalized templates (a supervisor skill that claims a piece of work and dispatches specialist agents — implement, test, adversarially audit, check infra, keep docs in sync — through to a reviewed PR), the [[Principles]] those templates were shaped by, and its own skills for moving work between here and any adopting project.
 
 The relationship with every project that adopts this pipeline is **two-way**, not adopt-once-and-drift:
-- **Vault → project:** `.claude/commands/project-lifecycle.md` now automates this direction for the existing-unadopted state — a project with real code but no vault templates installed yet gets evidence-gathered and relevance-scored, confirm-before-write (issue #63). The blank-repo (new project, #62) and adopted-but-stale (drift on an already-adopted project, #7) states are detected but still stubbed — manual, walking [[Adoption Checklist]], until those land. An earlier `/onboard` skill attempted this direction as a single flat installer and was removed for this three-state redesign; see [[Timeline]].
-- **Project → vault:** `ecosystem-sync` (installed in the target project per [[Adoption Checklist]]) watches that project's own `.claude/agents/`/`.claude/commands/`, and automatically ports back anything genuinely reusable it builds or sharpens — dispatched by that project's own implementation supervisor on every PR that touches pipeline tooling, no manual "go update the vault" step required.
+- **Vault → project:** `.claude/commands/project-lifecycle.md` now automates this direction for the existing-unadopted state — a project with real code but no vault templates installed yet gets evidence-gathered and relevance-scored, confirm-before-write (issue #63). The blank-repo (new project, #62) and adopted-but-stale (drift on an already-adopted project, #7) states are detected but still just stubbed — "not built yet, nothing changed" — until those land. An earlier `/onboard` skill attempted this direction as a single flat installer and was removed for this three-state redesign; see [[Timeline]].
+- **Project → vault:** `ecosystem-sync` (installed in the target project by [[.claude/commands/project-lifecycle|project-lifecycle]]'s existing-unadopted branch) watches that project's own `.claude/agents/`/`.claude/commands/`, and automatically ports back anything genuinely reusable it builds or sharpens — dispatched by that project's own implementation supervisor on every PR that touches pipeline tooling, no manual "go update the vault" step required.
 
 > [!note] Provenance
 > Originally extracted from the `product/argus` code repo. Argus remains one live instance of this pipeline (currently the most complete one), not a special case — any project that adopts the templates and wires up `ecosystem-sync` is on equal footing going forward. See [[CLAUDE]] for how a specific project repo and this vault relate.
@@ -12,7 +12,7 @@ The relationship with every project that adopts this pipeline is **two-way**, no
 ## Start here
 
 - [[Principles]] — the *why* behind every template. Read this first.
-- [[Adoption Checklist]] — the step-by-step guide for bringing this pipeline into a new project. Currently manual; see [[Timeline]] for why the automated `/onboard` skill was removed.
+- [[.claude/commands/project-lifecycle|project-lifecycle]] — the executable front door for bringing this pipeline into a new project; the standalone `Adoption Checklist.md` it superseded is retired (issue #81), see [[Timeline]].
 - [[Adopters]] — which projects have adopted this pipeline so far and what's installed where; `adopters.yaml` is the machine-parseable counterpart.
 - Ideas.md — retired and removed; this vault's backlog now lives as GitHub issues on this repo, fed by `/shape` (see below) rather than a markdown dump.
 
