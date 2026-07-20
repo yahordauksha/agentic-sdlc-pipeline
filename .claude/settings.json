@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=\"/Users/home/Documents/agent-ecosystem/Insights\"; F=$(ls -t \"$D\"/*.html 2>/dev/null | head -1); if [ -z \"$F\" ]; then echo \"{\\\"systemMessage\\\": \\\"It has been a while since you last ran /insight - want to check in on your usage patterns?\\\"}\"; else M=$(stat -f%m \"$F\" 2>/dev/null || stat -c%Y \"$F\" 2>/dev/null); A=$(( ($(date +%s) - M) / 86400 )); if [ \"$A\" -gt 7 ]; then echo \"{\\\"systemMessage\\\": \\\"It has been a while since you last ran /insight - want to check in on your usage patterns?\\\"}\"; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

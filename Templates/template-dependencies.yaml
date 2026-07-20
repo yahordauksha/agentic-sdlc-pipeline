@@ -1,0 +1,79 @@
+# Hard-requires and conflicts edges between templates in Templates/Agents/ and
+# Templates/Skills/. Resolved by .claude/commands/project-lifecycle.md STEP 3
+# as a dependency-closure pass, run *after* independent relevance-scoring
+# against Templates/relevance-triggers.yaml completes. A `requires` edge
+# force-includes the target template regardless of that template's own
+# independent trigger in relevance-triggers.yaml.
+#
+# Force-including is not the same as force-*installing*: project-lifecycle.md
+# STEP 4 must still let the Operator explicitly decline a dependency-closure-
+# forced template, with a clear warning about what breaks if they do. Never a
+# silent force-install.
+#
+# `conflicts` is a general structural safety net for two templates
+# independently claiming the same ownership surface (e.g. two doc-management
+# agents both triggering on "docs/ exists"). It is NOT how the one known case
+# of this failure shape (doc-keeper vs. vault-sync/vault-auditor, issue #63's
+# original dry-run bug #1) is actually resolved -- that cluster is fully
+# determined by an explicit override in project-lifecycle.md STEP 3, keyed to
+# STEP 2b Q1's answer, which runs *before* any row in relevance-triggers.yaml
+# (and before this file's own dependency-closure pass) gets a chance to fire
+# for those three templates. This list is kept live anyway, as a mechanical
+# backstop for the next template pair that hits the same failure shape,
+# since a future pair might not get a dedicated STEP 3 override built in
+# from day one the way the doc-management cluster now has.
+#
+# Not enforced by lint yet -- same deferred-follow-on note as
+# relevance-triggers.yaml's own header: a new Templates/Agents or
+# Templates/Skills file that hard-requires (or conflicts with) another needs
+# its own edge added here by hand, or project-lifecycle.md's dependency-
+# closure pass will silently miss it.
+
+dependencies:
+  skills:
+    implement:
+      requires:
+        - test-writer
+        - edge-case-auditor
+        - core-implementer
+        - cleanup
+      reason: >
+        implement.md's own HARD RULES require these unconditionally,
+        regardless of pre-existing test coverage: test-writer runs "always,
+        after core-implementer returns"; edge-case-auditor runs "always,
+        after test-writer returns... Never skip this even for low-risk-
+        looking issues"; core-implementer is the specialist implement
+        dispatches first; cleanup is implement's own end-of-session sweep.
+        None of these are conditional on anything project-lifecycle.md's
+        evidence-gathering can find or fail to find.
+  agents:
+    design-critic:
+      requires:
+        - spec
+      reason: >
+        design-critic is the independent adversarial review dispatched by
+        spec.md's STEP 1c judge-panel mode -- it has no role in a project
+        that doesn't also have spec selected. Dual-registered here and in
+        relevance-triggers.yaml, matching prompt-auditor's own entry below --
+        the precedent design-critic.md's own text explicitly names as its
+        independence-model source.
+    edge-case-auditor:
+      requires:
+        - test-writer
+      reason: >
+        edge-case-auditor audits test-writer's own output (see
+        Principles.md's "Adversarial verification: assume both are wrong")
+        -- it has nothing to check without test-writer having run first.
+    prompt-auditor:
+      requires:
+        - prompt-implementer
+      reason: >
+        prompt-auditor is the independent audit dispatched against a
+        prompt-implementer draft -- it has no role in a project that doesn't
+        also have prompt-implementer selected.
+
+conflicts: []
+# No live conflicts pair is resolved through this mechanism today. Kept as an
+# explicit empty list, not omitted, so the schema is visibly in use and ready
+# for the next template pair that hits this failure shape -- see the header
+# note above.

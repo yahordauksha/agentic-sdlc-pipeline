@@ -1,0 +1,61 @@
+# Structured, machine-parseable registry of projects that have adopted this
+# ecosystem's templates. Human-readable companion: Adopters.md.
+#
+# Thin schema by design: no per-template version/sync-SHA tracking yet
+# (deferred to issue #60), no registration automation yet (deferred to #59).
+# Seeded and maintained by hand until that automation lands.
+#
+# Identity is the GitHub repo URL, not a local filesystem path, so this
+# registry is usable across machines rather than tied to one laptop.
+#
+# This is the public copy: repo `url` fields are redacted (private
+# projects, not linked publicly) but project names and template-install
+# detail are kept as-is.
+
+adopters:
+  - project: Argus
+    joined_date: "origin project — this pipeline was extracted from Argus on 2026-07-07, not a real adoption date"
+    repos:
+      - url: "(private)"
+        templates_installed:
+          agents:
+            - core-implementer
+            - doc-keeper
+            - ecosystem-diagnostician
+            - edge-case-auditor
+            - iac-specialist
+            - ops-check
+            - test-writer
+            - triage
+            - vault-auditor
+            - vault-sync
+          skills:
+            - cleanup
+            - implement
+            - pipeline-review
+            - queue-scout
+            - spec
+      - url: "(private)"
+        templates_installed:
+          agents: []
+          skills: []
+  - project: Map of Telegram
+    joined_date: "2026-07-16"
+    repos:
+      - url: "(private)"
+        templates_installed:
+          agents:
+            - core-implementer
+            - doc-keeper
+            - ecosystem-diagnostician
+            - ecosystem-sync
+            - edge-case-auditor
+            - iac-specialist
+            - ops-check
+            - test-writer
+          skills:
+            - cleanup
+            - implement
+            - queue-scout
+            - shape
+            - spec

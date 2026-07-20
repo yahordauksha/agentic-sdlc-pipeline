@@ -1,0 +1,104 @@
+# Relevance-scoring trigger table for project-lifecycle.md's existing-unadopted
+# (retrofit) branch. One entry per template in Templates/Agents/ and
+# Templates/Skills/, seeded per issue #63.
+#
+# mechanism: deterministic | llm-judgment
+#   deterministic — a checkable file-pattern, or a structural co-selection
+#     rule against another template's own selection state; project-lifecycle
+#     evaluates this directly, no model judgment involved.
+#   llm-judgment  — relevance doesn't reduce to a clean file-pattern;
+#     project-lifecycle's own judgment decides, grounded in its
+#     evidence-gathering findings. EXPERIMENTAL/IN-TESTING — no external
+#     validation exists yet for the accuracy tradeoff between the two
+#     mechanisms (see Principles.md and project-lifecycle.md STEP 3's own
+#     kill-criterion self-check: if more than half of a real run's selected
+#     templates come through this path, the table below needs rework
+#     before this mechanism should be trusted further).
+#
+# This table is seeded, not exhaustive, and not enforced by lint (deferred
+# to a follow-on issue per #63's discussion) — a new Templates/Agents or
+# Templates/Skills file added later needs its own row here by hand, or it
+# will silently never be selected by project-lifecycle.
+#
+# A companion file, Templates/template-dependencies.yaml, holds hard-requires
+# and conflicts edges between templates (e.g. `implement` hard-requires
+# `test-writer` and `edge-case-auditor` regardless of this table's own
+# per-template triggers). project-lifecycle.md STEP 3 runs a dependency-
+# closure pass against that file *after* evaluating every row below, force-
+# including anything a selected template hard-requires. A row below that is
+# purely dependency-driven — no independent file-signal of its own — states
+# no separate condition at all and points at that file instead, to avoid the
+# two files disagreeing (or, worse, silently contradicting each other in the
+# same sentence) again; see test-writer/edge-case-auditor below.
+#
+# Separately: `doc-keeper`/`vault-sync`/`vault-auditor`'s rows below are each
+# still written as if independently triggerable, but project-lifecycle.md
+# STEP 3 overrides all three with a single answer (STEP 2b Q1) before these
+# rows are ever evaluated — that override, not these rows' own trigger text,
+# is what actually decides the doc-management cluster. The trigger text below
+# is kept as a description of what each template is *for*, not a live
+# condition for this cluster specifically.
+
+templates:
+  agents:
+    core-implementer:
+      mechanism: deterministic
+      trigger: "Detected application source files in a recognized language (not just config/docs). Near-universal for any repo that reaches this branch at all, since the branch's own front-door detection already requires source/manifest files present."
+    design-critic:
+      mechanism: deterministic
+      trigger: "Co-selected only if `spec` is also selected — it is dispatched exclusively by spec.md's STEP 1c judge-panel design-exploration mode, so it has nothing to review without spec also being selected. #67, which would mechanically enforce this row, hasn't shipped yet; added anyway for consistency."
+    doc-keeper:
+      mechanism: deterministic
+      trigger: "Detected a docs/ directory, README files, or any other existing project documentation worth keeping in sync going forward."
+    ecosystem-diagnostician:
+      mechanism: deterministic
+      trigger: "Co-selected only if both `implement` and `spec` are also selected — it is invoked exclusively by their own bail/escalation flows, so it has nothing to diagnose without them."
+    ecosystem-sync:
+      mechanism: deterministic
+      trigger: "Co-selected only if `implement` is also selected, and the target project will maintain its own .claude/agents/.claude/commands worth syncing back to this vault."
+    edge-case-auditor:
+      mechanism: deterministic
+      trigger: "Not an independent file-signal — co-selected solely via Templates/template-dependencies.yaml's `edge-case-auditor requires test-writer` edge (itself only reachable once `implement` pulls in `test-writer`), resolved by project-lifecycle.md STEP 3's dependency-closure pass. See that file for the full reasoning."
+    iac-specialist:
+      mechanism: deterministic
+      trigger: "Detected IaC files: *.tf, cdk.json, template.yaml/template.yml (SAM), serverless.yml, Pulumi.yaml/Pulumi.*.yaml, *.bicep, wrangler.toml/wrangler.jsonc (Cloudflare Workers), or a Kubernetes manifest convention."
+    ops-check:
+      mechanism: llm-judgment
+      trigger: "No clean file-pattern — relevance depends on whether the project actually has a deployed production log/monitoring source. A monitoring/ dir or a datadog.yaml/sentry config file is a weak hint, not proof; judged from evidence-gathering findings."
+    prompt-auditor:
+      mechanism: deterministic
+      trigger: "Co-selected only if `prompt-implementer` is also selected."
+    prompt-implementer:
+      mechanism: deterministic
+      trigger: "The target repo is itself a prompt/agent-definition vault, or otherwise maintains its own .claude/agents/.claude/commands as a first-class artifact it wants a /shape-equivalent pipeline for — not just any repo that happens to use Claude Code."
+    test-writer:
+      mechanism: deterministic
+      trigger: "Not an independent file-signal — co-selected solely via Templates/template-dependencies.yaml's `implement requires test-writer` edge, resolved by project-lifecycle.md STEP 3's dependency-closure pass. See that file for the full reasoning."
+    triage:
+      mechanism: deterministic
+      trigger: "Detected a .github/ directory and a GitHub-hosted git remote — signals the project actually runs an issue-tracker workflow this agent can triage against."
+    vault-auditor:
+      mechanism: deterministic
+      trigger: "Detected a separate Obsidian-style docs vault (docs/Home.md and/or a docs/CLAUDE.md following Obsidian wiki-link/callout conventions) AND `vault-sync` selected."
+    vault-sync:
+      mechanism: deterministic
+      trigger: "Detected a separate Obsidian-style docs vault (docs/Home.md and/or a docs/CLAUDE.md following Obsidian wiki-link/callout conventions)."
+  skills:
+    cleanup:
+      mechanism: deterministic
+      trigger: "Co-selected only if `implement` is also selected — cleanup sweeps the same git-worktree/issue-tracker surface implement operates on."
+    implement:
+      mechanism: deterministic
+      trigger: "Detected application source files in a recognized language — the anchor skill for this whole pipeline; without it none of the specialist agents above have a supervisor to dispatch them."
+    pipeline-review:
+      mechanism: deterministic
+      trigger: "Detected an existing structured pipeline event log (e.g. PIPELINE_LOG.jsonl or equivalent). Correctly false on a first-time retrofit — there is nothing to review yet; revisit once `implement` has run long enough to produce one."
+    queue-scout:
+      mechanism: deterministic
+      trigger: "Co-selected only if `implement` is also selected — optional accelerator over its own ready-to-build queue."
+    shape:
+      mechanism: deterministic
+      trigger: "Co-selected only if `implement` is also selected — shape hands off into the same implementation pipeline."
+    spec:
+      mechanism: deterministic
+      trigger: "Co-selected only if `implement` is also selected — spec turns a shaping-stage issue into what implement consumes."

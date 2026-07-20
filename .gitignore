@@ -1,0 +1,10 @@
+# OS
+.DS_Store
+
+# Obsidian workspace state (local layout, can contain absolute local paths)
+.obsidian/
+
+# Claude Code local runtime state (not part of the vault's own content)
+.claude/data/sessions/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
