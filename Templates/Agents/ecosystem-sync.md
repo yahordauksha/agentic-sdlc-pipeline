@@ -127,5 +127,5 @@ If Step 1 found no ecosystem-relevant change: just report that and stop — no c
 - [[Principles]]
 - [[Templates/Agents/vault-sync]] — the same automatic-sync pattern, applied to a product-strategy vault instead of this template vault
 - [[Templates/Agents/vault-auditor]] — periodic broad-sweep counterpart for the strategy vault; this vault's own manual counterpart is the human simply reviewing `Timeline.md`/`Principles.md` directly, since ecosystem-sync's write surface (Templates/) is small enough not to need a matching auditor yet
-- [[Adoption Checklist]]
+- [[.claude/commands/project-lifecycle]] — installs this agent into a newly-adopted project's own `.claude/agents/` as part of its existing-unadopted branch
 - [[Templates/Skills/implement]]
