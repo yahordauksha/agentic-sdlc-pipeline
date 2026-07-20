@@ -165,6 +165,24 @@ exit 0
 
 [CUSTOMIZE] The exact JSON shape a hook returns (`decision`/`reason` here) must match whatever your project's already-shipped `worktree_violation_caught` hook uses today — copy that contract rather than this doc's, since it's the one already verified working in your `.claude/settings.json`.
 
+## The field-level baseline every emitted event carries, regardless of `event` type
+
+This is the generalized answer to the schema sub-question raised in [[Principles#Open questions|Principles.md's open questions]] (the "Should this vault aggregate cross-project pipeline telemetry" entry) — one canonical definition, per [[Principles#Shared shapes need one definition, not one description per reader]], rather than a description re-derived per adopting project. Every event any project emits through `emit-pipeline-event.sh`, regardless of its specific `EVENT_TYPES` value, carries these fields at minimum, on top of whatever event-specific fields that event's own row in the table below requires:
+
+| Field | Meaning |
+|---|---|
+| `timestamp` | When the event was emitted. |
+| `project` | Which adopting project emitted this event — the field that makes a future cross-project aggregation actually attributable, once more than one project emits this log. |
+| `stage` | Where in the pipeline this event originated (e.g. `pre-dispatch`, `core-implementer`, `test-writer`, `edge-case-auditor`, or whatever this project's own pipeline stages are named). |
+| `category` | A **normalized**, cross-project-comparable label for what kind of event this is — the field a future cross-project recurrence check would actually group on. Keep this vocabulary small and project-agnostic (e.g. "dependency-missing," "safety-surface-touch," "spec-ambiguity") rather than copying a project-specific `blocker_type` value in here verbatim. |
+| `blocker_type` | Free-text, project-specific detail (e.g. Argus's own `kms-secrets-touch`). Local recurrence-matching only, within one project's own log — never meant to be compared or aggregated across projects, unlike `category` above. |
+| `recurrence_verdict` | `not_checked` \| `not_recurring` \| `recurring` — whether this event was checked against, and found to match, a prior occurrence of the same `stage`+`blocker_type` (or `category`, for a spec-question-shaped event). |
+
+[CUSTOMIZE] This baseline is additive to, not a replacement for, the `EVENT_TYPES`-keyed required-fields table below — every event still carries its own event-specific fields (e.g. `bail`'s `branch`/`summary`/`tracking_issue`) on top of this baseline, not instead of it. A project adapting this template should make sure every one of its own event types' required-fields list includes these six, plus whatever that specific event needs beyond them.
+
+> [!note] First pass, not yet cross-validated
+> This baseline is grounded in Argus's own schema (the only project currently emitting this log) with `category` generalized as the one genuinely new field — Argus's own log doesn't distinguish a normalized cross-project label from `blocker_type` today, since it never needed to. Revisit once a second real adopter's actual pipeline-log data exists to check this split still holds (see [[Principles#Open questions]] for what's still unresolved beyond the schema itself).
+
 ## The 14-event schema this was verified against (Argus's own, for illustration), plus 2 added since
 
 [CUSTOMIZE] this table to your own project's schema doc — the first 14 rows are Argus's `docs/PIPELINE_LOG_SCHEMA.md`, reproduced here as the worked example the script's `EVENT_TYPES` allowlist above was checked against line-by-line, not as a universal event vocabulary. `design_exploration_offered`/`design_exploration_declined` are this vault's own later addition (spec.md's STEP 1c, #76 Wave 2) and were never part of Argus's original 14.
